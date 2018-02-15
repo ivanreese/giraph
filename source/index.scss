@@ -20,10 +20,14 @@ svg {
   display: block;
   margin-bottom: 1em;
   font-size: 1.2em;
+  color: #888;
   span {
     display: inline-block;
-    margin: 0 .5em;
-    color: #888;
+    width: 10em;
+    color: white;
+    &:last-child {
+      margin-left: 1em;
+    }
   }
 }
 

@@ -6,14 +6,21 @@ ready ()->
     year: "numeric"
 
 
-  sliders = for label in document.querySelectorAll "[auto-slider]"
+  sliders = {}
+  for label in document.querySelectorAll "[auto-slider]"
     name = label.querySelector("div").textContent.toLowerCase()
-    this[name + "Slider"] = label.querySelector "input"
+    elm = label.querySelector "input"
+    sliders[name] =
+      name: name
+      value: +elm.value
+      elm: elm
+      dirty: true
+
   dateFalloff = document.querySelector "[date-falloff] input"
   dateRangeField = document.querySelector "[date-range]"
-  elm = document.querySelector "svg"
+  svgElm = document.querySelector "svg"
 
-  stage = SVG.create "g", elm,
+  stage = SVG.create "g", svgElm,
     fill: "hsl(15, 0%, 100%)"
 
 
@@ -23,6 +30,7 @@ ready ()->
   firstDate = new Date window.weatherData[0][0]
   lastDate = new Date window.weatherData[nPoints-1][0]
   lines = []
+  doFalloff = true
 
   for row, i in window.weatherData
     maxSpeed = Math.max row[3], maxSpeed
@@ -42,38 +50,49 @@ ready ()->
 
   render = ()->
     renderRequested = false
-    if playbackSlider.value > 0
-      dateSlider.value = +dateSlider.value + 0.5 * Math.pow (+playbackSlider.value)/100, 4
+
+    if sliders.playback.value > 0
+      sliders.date.value = sliders.date.value + 0.5 * Math.pow sliders.playback.value/100, 4
+      sliders.date.dirty = true
       requestRender()
 
-    indexRange = Math.round Math.min(nPoints, 24*7*13) * rangeSlider.value/100
-    centerIndex = Math.round indexRange/2 + (nPoints-indexRange) * dateSlider.value/100
+    indexRange = Math.round Math.min(nPoints, 24*7*13) * sliders.range.value/100
+    centerIndex = Math.round indexRange/2 + (nPoints-indexRange) * sliders.date.value/100
     startIndex = Math.ceil Math.max 0, centerIndex - indexRange/2
     endIndex = Math.floor Math.min nPoints-1, centerIndex + indexRange/2
 
-    dateRangeField.innerHTML = "#{dateFormatter.format(window.weatherData[startIndex][0])} <span>to</span> #{dateFormatter.format(window.weatherData[endIndex][0])}"
-    doFalloff = dateFalloff.checked
+    startDate = window.weatherData[startIndex]._date ?= dateFormatter.format(window.weatherData[startIndex][0])
+    endDate = window.weatherData[startIndex]._date ?= dateFormatter.format(window.weatherData[endIndex][0])
+    dateRangeField.innerHTML = "<span>#{startDate}</span> to <span>#{endDate}</span>"
+
     consumedLines = 0
 
     for row, i in window.weatherData when i >= startIndex and i <= endIndex and row[3] > 0
       avgSpeed = row[3]
       avgDir = row[4]
-      length = lerp speedSlider.value, 0, 100, maxSpeed, avgSpeed
-      width = widthSlider.value/100 * 4
-      a1 = Math.PI * (avgDir - width)/180
-      a2 = Math.PI * (avgDir + width)/180
-      x1 = length * Math.cos a1
-      y1 = length * Math.sin a1
-      x2 = length * Math.cos a2
-      y2 = length * Math.sin a2
+
+      if sliders.speed.dirty
+        row._length = lerp sliders.speed.value, 0, 100, maxSpeed, avgSpeed
+      if sliders.width.dirty
+        width = sliders.width.value/100 * 4
+        row._a1 = Math.PI * (avgDir - width)/180
+        row._a2 = Math.PI * (avgDir + width)/180
+      if sliders.speed.dirty or sliders.width.dirty
+        x1 = row._length * Math.cos row._a1
+        y1 = row._length * Math.sin row._a1
+        x2 = row._length * Math.cos row._a2
+        y2 = row._length * Math.sin row._a2
+        row._points = "0 0 #{x1} #{y1} #{x2} #{y2}"
       line = lines[consumedLines++] ?= SVG.create "polyline", stage
       SVG.attrs line,
         display: "inline"
-        points: "0 0 #{x1} #{y1} #{x2} #{y2}"
+        points: row._points
         opacity: if doFalloff then .2 * Math.pow(1 - Math.abs(lerp(i, startIndex, endIndex, -1, 1)), 4) else .05
 
     for line in lines[consumedLines...lines.length]
       SVG.attr line, "display", "none"
+
+    dirty = false
 
 
   resize = ()->
@@ -83,9 +102,17 @@ ready ()->
       scale: Math.min(window.innerWidth, window.innerHeight)/200
 
 
-  dateFalloff.addEventListener "change", requestRender
-  input.addEventListener "input", requestRender for input in sliders
+  handleInput = (slider)-> ()->
+    slider.value = +slider.elm.value
+    slider.dirty = true
+    requestRender()
+
+
   window.addEventListener "resize", resize
+  slider.elm.addEventListener "input", handleInput slider for name, slider of sliders
+  dateFalloff.addEventListener "change", ()->
+    doFalloff = dateFalloff.checked
+    requestRender()
 
   resize()
   requestRender()
