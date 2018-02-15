@@ -48,7 +48,7 @@ ready ()->
         avgSpeed = row[3]
         avgDir = row[4]
         length = lerp speedSlider.value, 0, 100, maxSpeed, avgSpeed
-        width = lerp widthSlider.value, 0, 100, 0, 10
+        width = lerp widthSlider.value, 0, 100, 0, 4
         x1 = length * Math.cos Math.PI * (avgDir - width)/180
         y1 = length * Math.sin Math.PI * (avgDir - width)/180
         x2 = length * Math.cos Math.PI * (avgDir + width)/180
@@ -58,7 +58,7 @@ ready ()->
         SVG.attrs line,
           display: "inline"
           points: "0 0 #{x1} #{y1} #{x2} #{y2}"
-          opacity: .1# * Math.pow falloff, 4
+          opacity: .2 * Math.pow falloff, 4
 
     for line in lines[consumedLines...lines.length]
       SVG.attr line, "display", "none"
