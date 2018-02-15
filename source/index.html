@@ -11,9 +11,11 @@
 <body>
   <svg></svg>
   <div date-range></div>
-  <label><div>Date</div><input value="1" step="0.1" type="range"></label>
-  <label><div>Range</div><input value="10" step="0.1" type="range"></label>
-  <label><div>Speed</div><input value="50" step="1" type="range"></label>
-  <label><div>Width</div><input value="50" step="1" type="range"></label>
+  <label auto-slider><div>Date</div><input value="1" step="0.000001" type="range" name="date"></label>
+  <label auto-slider><div>Range</div><input value="10" step="0.1" type="range"></label>
+  <label auto-slider><div>Speed</div><input value="50" step="0.1" type="range"></label>
+  <label auto-slider><div>Width</div><input value="50" step="0.1" type="range"></label>
+  <label auto-slider><div>Playback</div><input value="0" step="0.1" type="range"></label>
+  <label date-falloff><input type="checkbox"> Date Falloff Effect</label>
 </body>
 </html>
